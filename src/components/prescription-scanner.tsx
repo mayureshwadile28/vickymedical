@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Camera, RefreshCw, Send, Loader2 } from 'lucide-react';
+import { Camera, RefreshCw, Send, Loader2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface PrescriptionScannerProps {
@@ -13,6 +14,7 @@ interface PrescriptionScannerProps {
 
 export function PrescriptionScanner({ onCapture }: PrescriptionScannerProps) {
   const webcamRef = useRef<Webcam>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -21,23 +23,19 @@ export function PrescriptionScanner({ onCapture }: PrescriptionScannerProps) {
   useEffect(() => {
     const getCameraPermission = async () => {
       try {
+        // We only request permission, but don't keep the stream active
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
-        // Clean up the stream
         stream.getTracks().forEach(track => track.stop());
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
-        });
+        // We don't toast here anymore, to allow users to proceed with file upload
       }
     };
 
     getCameraPermission();
-  }, [toast]);
+  }, []);
   
 
   const capture = useCallback(() => {
@@ -46,6 +44,21 @@ export function PrescriptionScanner({ onCapture }: PrescriptionScannerProps) {
       setImage(imageSrc);
     }
   }, [webcamRef]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  }
 
   const handleRetake = () => {
     setImage(null);
@@ -68,17 +81,6 @@ export function PrescriptionScanner({ onCapture }: PrescriptionScannerProps) {
       )
   }
 
-  if (hasCameraPermission === false) {
-    return (
-      <Alert variant="destructive">
-        <Camera className="h-4 w-4" />
-        <AlertTitle>Camera Access Required</AlertTitle>
-        <AlertDescription>
-          This feature requires camera access. Please enable camera permissions in your browser settings and refresh the page.
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   return (
     <div className="w-full flex flex-col items-center gap-4">
@@ -86,13 +88,21 @@ export function PrescriptionScanner({ onCapture }: PrescriptionScannerProps) {
         {image ? (
           <img src={image} alt="Captured prescription" className="w-full h-full object-contain" />
         ) : (
-          <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/jpeg"
-            className="w-full h-full object-cover"
-            videoConstraints={{ facingMode: 'environment' }}
-          />
+          hasCameraPermission ? (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              className="w-full h-full object-cover"
+              videoConstraints={{ facingMode: 'environment' }}
+            />
+          ) : (
+             <div className="w-full h-full flex flex-col items-center justify-center bg-muted">
+                <Camera className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground text-center">Camera access is not available.</p>
+                <p className="text-sm text-muted-foreground text-center">Please enable it in your browser settings or upload a file.</p>
+            </div>
+          )
         )}
       </div>
       <div className="flex gap-4">
@@ -112,10 +122,17 @@ export function PrescriptionScanner({ onCapture }: PrescriptionScannerProps) {
             </Button>
           </>
         ) : (
-          <Button onClick={capture} size="lg">
-            <Camera className="mr-2 h-4 w-4" />
-            Capture Photo
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button onClick={capture} size="lg" disabled={!hasCameraPermission}>
+              <Camera className="mr-2 h-4 w-4" />
+              Capture Photo
+            </Button>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+            <Button onClick={handleUploadClick} variant="secondary" size="lg">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload an Image
+            </Button>
+          </div>
         )}
       </div>
     </div>

@@ -262,7 +262,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                         <DialogHeader>
                             <DialogTitle>Scan Prescription</DialogTitle>
                             <DialogDescription>
-                                Center the prescription in the frame and capture the image.
+                                Center the prescription in the frame and capture an image, or upload a photo.
                             </DialogDescription>
                         </DialogHeader>
                         <PrescriptionScanner onCapture={handlePrescriptionScan} />
