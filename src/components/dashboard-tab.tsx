@@ -32,7 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, ShoppingCart, Trash2, ChevronsUpDown } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle } from 'lucide-react';
 
 interface DashboardTabProps {
   medicines: Medicine[];
@@ -71,8 +71,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       toast({ title: 'No medicine selected', variant: 'destructive' });
       return;
     }
-    if (quantity <= 0) {
-      toast({ title: 'Invalid quantity', description: `Please enter a valid quantity.`, variant: 'destructive' });
+    if (quantity <= 0 || isNaN(quantity)) {
+      toast({ title: 'Invalid quantity', description: 'Please enter a valid quantity.', variant: 'destructive' });
       return;
     }
     if (quantity > selectedMedicine.quantity) {
@@ -83,7 +83,12 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     const existingItemIndex = billItems.findIndex(item => item.medicineId === selectedMedicine.id);
     if (existingItemIndex !== -1) {
       const newBillItems = [...billItems];
-      newBillItems[existingItemIndex].quantity += quantity;
+      const newQuantity = newBillItems[existingItemIndex].quantity + quantity;
+      if (newQuantity > selectedMedicine.quantity) {
+        toast({ title: 'Not enough stock', description: `Cannot add ${quantity}. Only ${selectedMedicine.quantity - newBillItems[existingItemIndex].quantity} more available.`, variant: 'destructive' });
+        return;
+      }
+      newBillItems[existingItemIndex].quantity = newQuantity;
       setBillItems(newBillItems);
     } else {
       setBillItems([
@@ -112,7 +117,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     }
 
     createSale({ customerName, items: billItems, totalAmount });
-    toast({ title: 'Sale Completed!', description: `Bill for ${customerName} created successfully.` });
+    toast({ title: 'Sale Completed!', description: `Bill for ${customerName} created successfully.`, className: 'bg-green-500 text-white' });
     
     // Reset state
     setBillItems([]);
@@ -120,14 +125,14 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <Card className="lg:col-span-2">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <Card className="lg:col-span-3">
         <CardHeader>
-          <CardTitle>Create New Bill</CardTitle>
+          <CardTitle>Point of Sale</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6">
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+            <div className="md:col-span-3">
               <Label htmlFor="medicine-search">Search Medicine</Label>
               <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
                 <PopoverTrigger asChild>
@@ -150,80 +155,79 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                   </div>
                   <ScrollArea className="h-[250px]">
                     {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
-                      <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm">
-                        {med.name} <span className="text-xs text-muted-foreground">({med.quantity} left)</span>
+                      <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between">
+                        <span>{med.name}</span>
+                        <span className="text-xs text-muted-foreground">({med.quantity} left)</span>
                       </div>
                     )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
                   </ScrollArea>
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="w-24">
+            <div className="md:col-span-1">
               <Label htmlFor="quantity">Quantity</Label>
               <Input id="quantity" type="number" min="1" max={selectedMedicine?.quantity || 1} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10))} />
             </div>
-            <Button onClick={handleAddToBill} disabled={!selectedMedicine}>Add to Bill</Button>
+            <div className="md:col-span-2">
+                <Button onClick={handleAddToBill} disabled={!selectedMedicine} className="w-full">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add to Bill
+                </Button>
+            </div>
           </div>
 
-          <div>
-            <h3 className="font-semibold mb-2">Current Bill</h3>
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="w-[100px] text-right">Qty</TableHead>
-                    <TableHead className="w-[100px] text-right">Price</TableHead>
-                    <TableHead className="w-[100px] text-right">Total</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Item</TableHead>
+                  <TableHead className="w-[80px] text-right">Qty</TableHead>
+                  <TableHead className="w-[100px] text-right">Price</TableHead>
+                  <TableHead className="w-[100px] text-right">Total</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {billItems.length > 0 ? billItems.map(item => (
+                  <TableRow key={item.medicineId}>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell className="text-right">{item.quantity}</TableCell>
+                    <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">₹{(item.quantity * item.price).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveFromBill(item.medicineId)} className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {billItems.length > 0 ? billItems.map(item => (
-                    <TableRow key={item.medicineId}>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">₹{(item.quantity * item.price).toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveFromBill(item.medicineId)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center h-24">
-                        No items in bill
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-                {billItems.length > 0 && (
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={3} className="font-bold text-lg">Total</TableCell>
-                      <TableCell className="text-right font-bold text-lg">₹{totalAmount.toFixed(2)}</TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableFooter>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                      No items in bill
+                    </TableCell>
+                  </TableRow>
                 )}
-              </Table>
-            </div>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Checkout</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-             <div className="flex justify-between items-center text-xl font-bold">
-              <span>Total Amount:</span>
-              <span>₹{totalAmount.toFixed(2)}</span>
-            </div>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+              <Label htmlFor="customer-name">Customer Name</Label>
+              <Input id="customer-name" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="e.g. John Doe" />
+          </div>
+          <div className="flex justify-between items-baseline text-2xl font-bold">
+            <span>Total:</span>
+            <span>₹{totalAmount.toFixed(2)}</span>
+          </div>
+        </CardContent>
+        <CardFooter>
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="w-full" size="lg" disabled={billItems.length === 0}>
@@ -232,28 +236,34 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Complete Sale</DialogTitle>
-                  <DialogDescription>Enter customer details to finalize the transaction.</DialogDescription>
+                  <DialogTitle>Confirm Sale</DialogTitle>
+                  <DialogDescription>
+                    Finalize the transaction for <span className="font-semibold">{customerName || 'customer'}</span>.
+                  </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="customer-name" className="text-right">Customer Name</Label>
-                    <Input id="customer-name" value={customerName} onChange={e => setCustomerName(e.target.value)} className="col-span-3" placeholder="e.g. John Doe" />
-                  </div>
-                  <div className="text-lg font-bold flex justify-between col-span-4 mt-4">
-                    <span>Total:</span>
+                <div className="space-y-4 py-4">
+                  {billItems.map(item => (
+                      <div key={item.medicineId} className="flex justify-between items-center text-sm">
+                          <span>{item.name} x {item.quantity}</span>
+                          <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
+                  ))}
+                  <div className="text-xl font-bold flex justify-between items-center border-t pt-4 mt-4">
+                    <span>Total Amount:</span>
                     <span>₹{totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
                 <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
                   <DialogClose asChild>
                     <Button onClick={handleCompleteSale}>Confirm Sale</Button>
                   </DialogClose>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        </CardContent>
+        </CardFooter>
       </Card>
     </div>
   );

@@ -9,6 +9,7 @@ import DashboardTab from '@/components/dashboard-tab';
 import InventoryTab from '@/components/inventory-tab';
 import HistoryTab from '@/components/history-tab';
 import { Logo } from '@/components/icons';
+import { Package, Pill, History, ShoppingCart } from 'lucide-react';
 
 export default function Home() {
   const [medicines, setMedicines] = useState<Medicine[]>(initialMedicines);
@@ -49,7 +50,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm">
         <div className="container flex h-16 items-center space-x-4">
           <Logo className="h-8 w-8 text-primary" />
@@ -58,10 +59,19 @@ export default function Home() {
       </header>
       <main className="flex-1 p-4 md:p-8 container">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto bg-muted/60 p-1">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              <span>POS</span>
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="flex items-center gap-2">
+              <Pill className="h-4 w-4" />
+              <span>Inventory</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              <span>History</span>
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="mt-6">
             <DashboardTab medicines={medicines} createSale={createSale} />
