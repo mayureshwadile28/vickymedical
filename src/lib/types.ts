@@ -5,8 +5,11 @@ export interface Medicine {
   name: string;
   location: string;
   price: number; // Price per strip for tablets, or per unit for others
-  quantity: number; // Number of strips or units
+  quantity: number; // For non-tablet categories
+  strips?: number; // For tablets
+  looseTablets?: number; // For tablets
   category: MedicineCategory;
+  tabletsPerStrip?: number;
 }
 
 export interface SaleItem {

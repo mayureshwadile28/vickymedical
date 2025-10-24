@@ -48,7 +48,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const CATEGORIES: MedicineCategory[] = ['Tablet', 'Syrup', 'Veterinary', 'Injection', 'Other'];
 
-
 interface InventoryTabProps {
   medicines: Medicine[];
   addMedicine: (medicine: Omit<Medicine, 'id'>) => void;
@@ -68,28 +67,53 @@ const MedicineForm = ({
   const [name, setName] = useState(medicine?.name || '');
   const [location, setLocation] = useState(medicine?.location || '');
   const [price, setPrice] = useState(medicine?.price?.toString() || '');
-  const [quantity, setQuantity] = useState(medicine?.quantity?.toString() || '');
   const [category, setCategory] = useState<MedicineCategory>(medicine?.category || 'Tablet');
+  
+  // State for Tablet category
+  const [strips, setStrips] = useState(medicine?.strips?.toString() || '');
+  const [looseTablets, setLooseTablets] = useState(medicine?.looseTablets?.toString() || '');
+  const [tabletsPerStrip, setTabletsPerStrip] = useState(medicine?.tabletsPerStrip?.toString() || '10');
+
+  // State for other categories
+  const [quantity, setQuantity] = useState(medicine?.quantity?.toString() || '');
+
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const priceValue = parseFloat(price);
-    const quantityValue = parseInt(quantity, 10);
-
-    if (!name || !location || !category || isNaN(priceValue) || priceValue <= 0 || isNaN(quantityValue) || quantityValue < 0) {
-      toast({
-        title: 'Invalid Input',
-        description: 'Please fill all fields with valid data.',
-        variant: 'destructive',
-      });
+    
+    if (!name || !location || !category || isNaN(priceValue) || priceValue <= 0) {
+      toast({ title: 'Invalid Input', description: 'Please fill all fields with valid data.', variant: 'destructive' });
       return;
     }
-    onSubmit({ name, location, price: priceValue, quantity: quantityValue, category });
+
+    let submissionData: Omit<Medicine, 'id'>;
+
+    if (category === 'Tablet') {
+      const stripsValue = parseInt(strips, 10);
+      const looseTabletsValue = parseInt(looseTablets, 10) || 0;
+      const tabletsPerStripValue = parseInt(tabletsPerStrip, 10);
+
+      if (isNaN(stripsValue) || stripsValue < 0 || isNaN(tabletsPerStripValue) || tabletsPerStripValue <= 0) {
+        toast({ title: 'Invalid Input for Tablets', description: 'Please provide valid numbers for strips and tablets per strip.', variant: 'destructive' });
+        return;
+      }
+      submissionData = { name, location, price: priceValue, category, strips: stripsValue, looseTablets: looseTabletsValue, tabletsPerStrip: tabletsPerStripValue, quantity: 0 };
+
+    } else {
+      const quantityValue = parseInt(quantity, 10);
+      if (isNaN(quantityValue) || quantityValue < 0) {
+        toast({ title: 'Invalid Input', description: 'Please provide a valid quantity.', variant: 'destructive' });
+        return;
+      }
+      submissionData = { name, location, price: priceValue, category, quantity: quantityValue };
+    }
+    
+    onSubmit(submissionData);
   };
   
-  const priceLabel = category === 'Tablet' ? 'Price (₹) / strip' : 'Price (₹) / unit';
-  const quantityLabel = category === 'Tablet' ? 'Strips (Qty)' : 'Units (Qty)';
+  const priceLabel = category === 'Tablet' ? `Price (₹) / strip of ${tabletsPerStrip}` : 'Price (₹) / unit';
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -112,14 +136,39 @@ const MedicineForm = ({
         <Label htmlFor="location" className="text-right">Location</Label>
         <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" placeholder="e.g. Rack A-12"/>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="price" className="text-right">{priceLabel}</Label>
-        <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={category === 'Tablet' ? 'Price for 10 tablets' : 'Price per unit'}/>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="quantity" className="text-right">{quantityLabel}</Label>
-        <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="col-span-3" placeholder={category === 'Tablet' ? 'Number of strips' : 'Number of units'}/>
-      </div>
+
+      {category === 'Tablet' ? (
+        <>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="tabletsPerStrip" className="text-right">Tablets / Strip</Label>
+            <Input id="tabletsPerStrip" type="number" min="1" value={tabletsPerStrip} onChange={(e) => setTabletsPerStrip(e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="price" className="text-right">{priceLabel}</Label>
+            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={`Price for ${tabletsPerStrip} tablets`} />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="strips" className="text-right">Strips (Qty)</Label>
+            <Input id="strips" type="number" min="0" value={strips} onChange={(e) => setStrips(e.target.value)} className="col-span-3" placeholder="Number of full strips"/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="looseTablets" className="text-right">Loose Tablets</Label>
+            <Input id="looseTablets" type="number" min="0" value={looseTablets} onChange={(e) => setLooseTablets(e.target.value)} className="col-span-3" placeholder="Number of loose tablets"/>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="price" className="text-right">{priceLabel}</Label>
+            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="Price per unit"/>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="quantity" className="text-right">Units (Qty)</Label>
+            <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="col-span-3" placeholder="Number of units"/>
+          </div>
+        </>
+      )}
+
       <DialogFooter>
         <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
@@ -169,6 +218,23 @@ export default function InventoryTab({
       .filter(med => activeCategory === 'All' || med.category === activeCategory)
       .filter(med => med.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [medicines, activeCategory, searchQuery]);
+  
+  const getStockDisplay = (med: Medicine) => {
+    if (med.category === 'Tablet') {
+      const strips = med.strips || 0;
+      const loose = med.looseTablets || 0;
+      return `${strips} strips, ${loose} tabs`;
+    }
+    const quantity = med.quantity || 0;
+    return `${quantity} units`;
+  }
+  
+  const getPriceDisplay = (med: Medicine) => {
+     if (med.category === 'Tablet') {
+        return `₹${med.price.toFixed(2)} / ${med.tabletsPerStrip || 10} tabs`;
+     }
+     return `₹${med.price.toFixed(2)} / unit`;
+  }
 
   return (
     <Card>
@@ -195,7 +261,7 @@ export default function InventoryTab({
       </CardHeader>
       <CardContent>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
               <DialogTitle>{editingMedicine ? 'Edit Medicine' : 'Add New Medicine'}</DialogTitle>
               <DialogDescription>
@@ -224,50 +290,53 @@ export default function InventoryTab({
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead className="text-right">Price / unit</TableHead>
-              <TableHead className="text-right">Stock (Units)</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Stock</TableHead>
               <TableHead className="text-right w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
-              <TableRow key={med.id}>
-                <TableCell className="font-medium">{med.name}</TableCell>
-                <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
-                <TableCell>{med.location}</TableCell>
-                <TableCell className="text-right">₹{med.price.toFixed(2)}</TableCell>
-                <TableCell className={`text-right font-semibold ${med.quantity < 10 ? 'text-destructive' : ''}`}>{med.quantity % 1 === 0 ? med.quantity : med.quantity.toFixed(1)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(med)} className="h-8 w-8">
-                      <FilePenLine className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8">
-                          <Trash2 className="h-4 w-4" />
+            {filteredMedicines.length > 0 ? filteredMedicines.map(med => {
+                const totalStock = med.category === 'Tablet' ? ((med.strips || 0) * (med.tabletsPerStrip || 10) + (med.looseTablets || 0)) : (med.quantity || 0);
+                return (
+                  <TableRow key={med.id}>
+                    <TableCell className="font-medium">{med.name}</TableCell>
+                    <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
+                    <TableCell>{med.location}</TableCell>
+                    <TableCell>{getPriceDisplay(med)}</TableCell>
+                    <TableCell className={`font-semibold ${totalStock < 10 ? 'text-destructive' : ''}`}>{getStockDisplay(med)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(med)} className="h-8 w-8">
+                          <FilePenLine className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the medicine
-                            from your inventory.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteMedicine(med.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the medicine
+                                from your inventory.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMedicine(med.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+            }) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center h-48 text-muted-foreground">
                    <div className="flex flex-col items-center justify-center gap-2">

@@ -65,29 +65,34 @@ export default function Home() {
   };
 
   const createSale = (sale: Omit<SaleRecord, 'id' | 'saleDate'>) => {
-    // 1. Create new sale record
     const newSale: SaleRecord = {
       ...sale,
       id: `sale-${Date.now()}`,
       saleDate: new Date().toISOString(),
     };
     setSales(prev => [newSale, ...prev]);
-
-    // 2. Update stock
+  
     setMedicines(prevMedicines => {
-      const updatedMedicines = [...prevMedicines];
-      newSale.items.forEach(item => {
-        const medIndex = updatedMedicines.findIndex(m => m.id === item.medicineId);
-        if (medIndex !== -1) {
-          const currentMed = updatedMedicines[medIndex];
-          const unitsSold = currentMed.category === 'Tablet' ? item.quantity / 10 : item.quantity;
-          
-          // Ensure quantity is treated as a float for precision
-          const newQuantity = parseFloat(currentMed.quantity.toString()) - unitsSold;
-
-          // Update the medicine with the new, precise quantity
-          updatedMedicines[medIndex] = { ...currentMed, quantity: newQuantity };
+      const updatedMedicines = prevMedicines.map(med => {
+        const saleItem = newSale.items.find(item => item.medicineId === med.id);
+        if (!saleItem) {
+          return med;
         }
+  
+        const updatedMed = { ...med };
+  
+        if (updatedMed.category === 'Tablet') {
+          const tabletsPerStrip = updatedMed.tabletsPerStrip || 10;
+          const totalTablets = (updatedMed.strips || 0) * tabletsPerStrip + (updatedMed.looseTablets || 0);
+          const remainingTablets = totalTablets - saleItem.quantity;
+          
+          updatedMed.strips = Math.floor(remainingTablets / tabletsPerStrip);
+          updatedMed.looseTablets = remainingTablets % tabletsPerStrip;
+        } else {
+          updatedMed.quantity = (updatedMed.quantity || 0) - saleItem.quantity;
+        }
+  
+        return updatedMed;
       });
       return updatedMedicines;
     });

@@ -39,6 +39,15 @@ interface DashboardTabProps {
   createSale: (sale: Omit<SaleRecord, 'id' | 'saleDate'>) => void;
 }
 
+const getAvailableUnits = (medicine: Medicine | null) => {
+  if (!medicine) return 0;
+  if (medicine.category === 'Tablet') {
+    const tabletsPerStrip = medicine.tabletsPerStrip || 10;
+    return (medicine.strips || 0) * tabletsPerStrip + (medicine.looseTablets || 0);
+  }
+  return medicine.quantity || 0;
+};
+
 export default function DashboardTab({ medicines, createSale }: DashboardTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
@@ -49,10 +58,11 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   const { toast } = useToast();
 
   const filteredMedicines = useMemo(() => {
-    if (!searchQuery) return medicines.filter(m => m.quantity > 0);
-    return medicines.filter(m =>
-      m.name.toLowerCase().includes(searchQuery.toLowerCase()) && m.quantity > 0
-    );
+    return medicines.filter(m => {
+      const hasStock = getAvailableUnits(m) > 0;
+      if (!searchQuery) return hasStock;
+      return m.name.toLowerCase().includes(searchQuery.toLowerCase()) && hasStock;
+    });
   }, [searchQuery, medicines]);
 
   const totalAmount = useMemo(() => {
@@ -67,8 +77,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   };
   
   const isTablet = selectedMedicine?.category === 'Tablet';
-  const pricePerUnit = selectedMedicine ? (isTablet ? selectedMedicine.price / 10 : selectedMedicine.price) : 0;
-  const availableUnits = selectedMedicine ? (isTablet ? selectedMedicine.quantity * 10 : selectedMedicine.quantity) : 0;
+  const pricePerUnit = selectedMedicine ? (isTablet ? selectedMedicine.price / (selectedMedicine.tabletsPerStrip || 10) : selectedMedicine.price) : 0;
+  const availableUnits = getAvailableUnits(selectedMedicine);
   const quantityLabel = isTablet ? 'Tablets (Qty)' : 'Units (Qty)';
 
   const handleAddToBill = () => {
@@ -81,7 +91,6 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       return;
     }
     
-    // Check against available units
     if (quantity > availableUnits) {
       toast({ title: 'Not enough stock', description: `Only ${availableUnits} units available.`, variant: 'destructive' });
       return;
@@ -94,7 +103,6 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       const existingItem = newBillItems[existingItemIndex];
       const newQuantity = existingItem.quantity + quantity;
 
-      // Check total quantity in cart against available stock
       if (newQuantity > availableUnits) {
         toast({ title: 'Not enough stock', description: `Cannot add ${quantity} more. Only ${availableUnits - existingItem.quantity} units left in stock.`, variant: 'destructive' });
         return;
@@ -130,10 +138,18 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     createSale({ customerName, items: billItems, totalAmount });
     toast({ title: 'Sale Completed!', description: `Bill for ${customerName} created successfully.`, className: 'bg-green-500 text-white' });
     
-    // Reset state
     setBillItems([]);
     setCustomerName('');
   };
+  
+  const getStockDisplay = (med: Medicine) => {
+    if (med.category === 'Tablet') {
+      const tabletsPerStrip = med.tabletsPerStrip || 10;
+      const totalTablets = (med.strips || 0) * tabletsPerStrip + (med.looseTablets || 0);
+      return `${totalTablets} tablets left`;
+    }
+    return `${med.quantity} units left`;
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
@@ -168,7 +184,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                     {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
                       <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between">
                         <span>{med.name}</span>
-                        <span className="text-xs text-muted-foreground">({med.quantity} {med.category === 'Tablet' ? 'strips' : 'units'} left)</span>
+                        <span className="text-xs text-muted-foreground">({getStockDisplay(med)})</span>
                       </div>
                     )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
                   </ScrollArea>
