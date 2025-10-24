@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,13 +9,28 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { History, Inbox, Calendar, User } from 'lucide-react';
+import { History, Inbox, Calendar, User, FileDown, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface HistoryTabProps {
   sales: SaleRecord[];
   medicines: Medicine[];
+  clearSales: () => void;
 }
 
 const SaleDate = ({ date }: { date: string }) => {
@@ -48,15 +64,86 @@ const SaleDate = ({ date }: { date: string }) => {
 }
 
 
-export default function HistoryTab({ sales }: HistoryTabProps) {
+export default function HistoryTab({ sales, clearSales }: HistoryTabProps) {
+  const { toast } = useToast();
+
+  const handleExport = () => {
+    if (sales.length === 0) {
+      toast({ title: "No history to export", variant: "destructive"});
+      return;
+    }
+
+    const headers = ['Sale ID', 'Date', 'Customer Name', 'Item Name', 'Quantity', 'Price Per Unit', 'Item Total'];
+    const csvRows = [headers.join(',')];
+
+    sales.forEach(sale => {
+      sale.items.forEach(item => {
+        const row = [
+          sale.id,
+          new Date(sale.saleDate).toLocaleString(),
+          `"${sale.customerName.replace(/"/g, '""')}"`,
+          `"${item.name.replace(/"/g, '""')}"`,
+          item.quantity,
+          item.price.toFixed(2),
+          (item.quantity * item.price).toFixed(2),
+        ];
+        csvRows.push(row.join(','));
+      });
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sales_history_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    toast({ title: "Export Successful", description: "Sales history has been downloaded as a CSV file."})
+  };
+
+  const handleClearHistory = () => {
+    clearSales();
+    toast({ title: "History Cleared", description: "All sales records have been deleted.", className: "bg-green-500 text-white" });
+  }
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <CardTitle className="flex items-center">
           <History className="mr-2 h-6 w-6" />
           Sales History
         </CardTitle>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExport} disabled={sales.length === 0}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to CSV
+            </Button>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={sales.length === 0}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear History
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete all your sales history.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearHistory}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
       </CardHeader>
       <CardContent>
         {sales.length > 0 ? (

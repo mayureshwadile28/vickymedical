@@ -98,6 +98,10 @@ export default function Home() {
     });
   };
 
+  const clearSales = () => {
+    setSales([]);
+  }
+
   // Render a loading state until the data is loaded from localStorage
   if (!isLoaded) {
     return (
@@ -146,7 +150,7 @@ export default function Home() {
             />
           </TabsContent>
           <TabsContent value="history" className="mt-6">
-            <HistoryTab sales={sales} medicines={medicines} />
+            <HistoryTab sales={sales} medicines={medicines} clearSales={clearSales} />
           </TabsContent>
         </Tabs>
       </main>
