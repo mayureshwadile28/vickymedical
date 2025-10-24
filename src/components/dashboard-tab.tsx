@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -85,7 +86,6 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     }
 
     const existingItemIndex = billItems.findIndex(item => item.medicineId === selectedMedicine.id);
-    const itemPricePerTablet = selectedMedicine.price / 10;
     
     if (existingItemIndex !== -1) {
       const newBillItems = [...billItems];
@@ -102,7 +102,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     } else {
       setBillItems([
         ...billItems,
-        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: itemPricePerTablet },
+        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: pricePerTablet },
       ]);
     }
     

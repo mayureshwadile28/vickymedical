@@ -1,19 +1,56 @@
 
 'use client';
 
-import { useState } from 'react';
-import { initialMedicines } from '@/lib/data';
+import { useState, useEffect } from 'react';
 import type { Medicine, SaleRecord } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardTab from '@/components/dashboard-tab';
 import InventoryTab from '@/components/inventory-tab';
 import HistoryTab from '@/components/history-tab';
 import { Logo } from '@/components/icons';
-import { Package, Pill, History, ShoppingCart } from 'lucide-react';
+import { Pill, History, ShoppingCart } from 'lucide-react';
+
+// Define keys for local storage
+const MEDICINES_STORAGE_KEY = 'vicky-medical-medicines';
+const SALES_STORAGE_KEY = 'vicky-medical-sales';
 
 export default function Home() {
-  const [medicines, setMedicines] = useState<Medicine[]>(initialMedicines);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load data from localStorage on initial render
+  useEffect(() => {
+    try {
+      const storedMedicines = localStorage.getItem(MEDICINES_STORAGE_KEY);
+      if (storedMedicines) {
+        setMedicines(JSON.parse(storedMedicines));
+      }
+      const storedSales = localStorage.getItem(SALES_STORAGE_KEY);
+      if (storedSales) {
+        setSales(JSON.parse(storedSales));
+      }
+    } catch (error) {
+      console.error("Failed to parse data from localStorage", error);
+      // Handle potential JSON parsing errors
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save medicines to localStorage whenever they change
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(MEDICINES_STORAGE_KEY, JSON.stringify(medicines));
+    }
+  }, [medicines, isLoaded]);
+
+  // Save sales to localStorage whenever they change
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
+    }
+  }, [sales, isLoaded]);
+
 
   const addMedicine = (medicine: Omit<Medicine, 'id'>) => {
     setMedicines(prev => [...prev, { ...medicine, id: `med-${Date.now()}` }]);
@@ -36,12 +73,20 @@ export default function Home() {
     };
     setSales(prev => [newSale, ...prev]);
 
-    // 2. Update stock (quantity is in strips)
+    // 2. Update stock
     setMedicines(prevMedicines => {
       const updatedMedicines = [...prevMedicines];
       newSale.items.forEach(item => {
         const medIndex = updatedMedicines.findIndex(m => m.id === item.medicineId);
         if (medIndex !== -1) {
+          const currentMed = updatedMedicines[medIndex];
+          const totalTabletsInStock = currentMed.quantity * 10;
+          const remainingTablets = totalTabletsInStock - item.quantity;
+          // Calculate the new quantity in strips, rounding up to handle partial strips.
+          const newStripQuantity = Math.ceil(remainingTablets / 10);
+          
+          // To be more precise, let's store remaining tablets and derive strips. Or, for simplicity, let's assume we sell full strips and update logic.
+          // For now, let's stick to the tablet logic. The quantity in medicine is strips.
           const tabletsSold = item.quantity;
           const stripsSold = tabletsSold / 10;
           updatedMedicines[medIndex].quantity -= stripsSold;
@@ -50,6 +95,18 @@ export default function Home() {
       return updatedMedicines;
     });
   };
+
+  // Render a loading state until the data is loaded from localStorage
+  if (!isLoaded) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <div className="flex items-center space-x-4">
+                <Logo className="h-10 w-10 text-primary animate-spin" />
+                <h1 className="text-2xl font-bold text-foreground">Loading Vicky Medical...</h1>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
