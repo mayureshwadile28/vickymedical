@@ -75,7 +75,7 @@ const MedicineForm = ({
   
   // State for Tablet category
   const [strips, setStrips] = useState(medicine?.strips?.toString() || '');
-  const [tabletsPerStrip, setTabletsPerStrip] = useState(medicine?.tabletsPerStrip?.toString() || '10');
+  const tabletsPerStrip = 10; // Hardcoded as per user request
 
   // State for other categories
   const [quantity, setQuantity] = useState(medicine?.quantity?.toString() || '');
@@ -85,6 +85,16 @@ const MedicineForm = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const priceValue = parseFloat(price);
+
+    // Expiry date validation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to midnight to compare dates only
+    const enteredExpiryDate = new Date(expiryDate);
+    
+    if (enteredExpiryDate < today) {
+      toast({ title: 'Invalid Expiry Date', description: 'Cannot add a medicine that has already expired.', variant: 'destructive' });
+      return;
+    }
     
     if (!name || !location || !category || !expiryDate || isNaN(priceValue) || priceValue <= 0) {
       toast({ title: 'Invalid Input', description: 'Please fill all fields with valid data.', variant: 'destructive' });
@@ -95,10 +105,9 @@ const MedicineForm = ({
 
     if (category === 'Tablet') {
       const stripsValue = parseInt(strips, 10);
-      const tabletsPerStripValue = parseInt(tabletsPerStrip, 10);
 
-      if (isNaN(stripsValue) || stripsValue < 0 || isNaN(tabletsPerStripValue) || tabletsPerStripValue <= 0) {
-        toast({ title: 'Invalid Input for Tablets', description: 'Please provide valid numbers for strips and tablets per strip.', variant: 'destructive' });
+      if (isNaN(stripsValue) || stripsValue < 0) {
+        toast({ title: 'Invalid Input for Tablets', description: 'Please provide a valid number for strips.', variant: 'destructive' });
         return;
       }
       submissionData = { 
@@ -108,8 +117,8 @@ const MedicineForm = ({
         expiryDate,
         category, 
         strips: stripsValue, 
-        looseTablets: medicine?.looseTablets || 0, // Keep existing loose tablets on edit, or 0 for new
-        tabletsPerStrip: tabletsPerStripValue, 
+        looseTablets: 0,
+        tabletsPerStrip: tabletsPerStrip, 
         quantity: 0 
       };
 
@@ -125,7 +134,7 @@ const MedicineForm = ({
     onSubmit(submissionData);
   };
   
-  const priceLabel = category === 'Tablet' ? `Price (₹) / strip of ${tabletsPerStrip || 10}` : 'Price (₹) / unit';
+  const priceLabel = category === 'Tablet' ? `Price (₹) / strip of ${tabletsPerStrip}` : 'Price (₹) / unit';
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -150,18 +159,14 @@ const MedicineForm = ({
       </div>
        <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="expiryDate" className="text-right">Expiry Date</Label>
-        <Input id="expiryDate" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="col-span-3"/>
+        <Input id="expiryDate" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="col-span-3" required/>
       </div>
 
       {category === 'Tablet' ? (
         <>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tabletsPerStrip" className="text-right">Tablets / Strip</Label>
-            <Input id="tabletsPerStrip" type="number" min="1" value={tabletsPerStrip} onChange={(e) => setTabletsPerStrip(e.target.value)} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="price" className="text-right">{priceLabel}</Label>
-            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={`Price for ${tabletsPerStrip || 10} tablets`} />
+            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={`Price for ${tabletsPerStrip} tablets`} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="strips" className="text-right">Strips (Qty)</Label>
@@ -256,9 +261,7 @@ export default function InventoryTab({
   }
 
   const isExpired = (expiryDate: string) => {
-    // an empty or invalid date is not considered expired
     if (!expiryDate) return false;
-    // Set time to 00:00:00 to compare dates only
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const expiry = new Date(expiryDate);
@@ -345,7 +348,7 @@ export default function InventoryTab({
                       {formatDate(med.expiryDate)}
                     </TableCell>
                     <TableCell>{getPriceDisplay(med)}</TableCell>
-                    <TableCell className={cn('font-semibold', lowStock && 'text-destructive')}>
+                    <TableCell className={cn('font-semibold', lowStock && !expired && 'text-yellow-500', totalStock === 0 && 'text-destructive')}>
                       {getStockDisplay(med)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -397,5 +400,7 @@ export default function InventoryTab({
     </Card>
   );
 }
+
+    
 
     
