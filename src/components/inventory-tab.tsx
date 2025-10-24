@@ -91,8 +91,8 @@ const MedicineForm = ({
     today.setHours(0, 0, 0, 0); // Set to midnight to compare dates only
     const enteredExpiryDate = new Date(expiryDate);
     
-    if (enteredExpiryDate < today) {
-      toast({ title: 'Invalid Expiry Date', description: 'Cannot add a medicine that has already expired.', variant: 'destructive' });
+    if (enteredExpiryDate <= today) {
+      toast({ title: 'Invalid Expiry Date', description: 'Expiry date must be in the future.', variant: 'destructive' });
       return;
     }
     
@@ -404,3 +404,4 @@ export default function InventoryTab({
     
 
     
+
