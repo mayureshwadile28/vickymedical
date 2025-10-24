@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, FilePenLine, Trash2, Pill, Inbox, Search } from 'lucide-react';
+import { PlusCircle, FilePenLine, Trash2, Pill, Inbox, Search, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -91,8 +91,8 @@ const MedicineForm = ({
     today.setHours(0, 0, 0, 0); // Set to midnight to compare dates only
     const enteredExpiryDate = new Date(expiryDate);
     
-    if (enteredExpiryDate <= today) {
-      toast({ title: 'Invalid Expiry Date', description: 'Expiry date must be in the future.', variant: 'destructive' });
+    if (enteredExpiryDate < today) {
+      toast({ title: 'Invalid Expiry Date', description: 'Expiry date cannot be in the past.', variant: 'destructive' });
       return;
     }
     
@@ -196,6 +196,51 @@ const MedicineForm = ({
   );
 };
 
+const ExpiryInfo = ({ expiryDate }: { expiryDate: string }) => {
+    if (!expiryDate) return <span className="text-muted-foreground">N/A</span>;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
+
+    const diffTime = expiry.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const formattedDate = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    if (diffDays < 0) {
+        return (
+            <div className="text-destructive font-bold flex flex-col">
+                <span>{formattedDate}</span>
+                <span>({-diffDays} days ago)</span>
+            </div>
+        );
+    }
+    if (diffDays === 0) {
+        return (
+            <div className="text-destructive font-bold flex flex-col">
+                <span>{formattedDate}</span>
+                <span>(Expires today)</span>
+            </div>
+        );
+    }
+    if (diffDays <= 30) {
+        return (
+            <div className="text-yellow-500 font-semibold flex flex-col">
+                <span>{formattedDate}</span>
+                <span>({diffDays} days left)</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col">
+            <span>{formattedDate}</span>
+            <span className="text-xs text-muted-foreground">({diffDays} days left)</span>
+        </div>
+    );
+};
+
 
 export default function InventoryTab({
   medicines,
@@ -268,12 +313,6 @@ export default function InventoryTab({
     return expiry < today;
   }
   
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'});
-  }
-
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -344,8 +383,8 @@ export default function InventoryTab({
                     <TableCell className="font-medium">{med.name}</TableCell>
                     <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
                     <TableCell>{med.location}</TableCell>
-                    <TableCell className={cn('font-medium', expired && 'text-destructive font-bold')}>
-                      {formatDate(med.expiryDate)}
+                    <TableCell>
+                      <ExpiryInfo expiryDate={med.expiryDate} />
                     </TableCell>
                     <TableCell>{getPriceDisplay(med)}</TableCell>
                     <TableCell className={cn('font-semibold', lowStock && !expired && 'text-yellow-500', totalStock === 0 && 'text-destructive')}>
@@ -404,4 +443,5 @@ export default function InventoryTab({
     
 
     
+
 
