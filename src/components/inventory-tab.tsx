@@ -56,13 +56,16 @@ const MedicineForm = ({
 }) => {
   const [name, setName] = useState(medicine?.name || '');
   const [location, setLocation] = useState(medicine?.location || '');
-  const [price, setPrice] = useState(medicine?.price || 0);
-  const [quantity, setQuantity] = useState(medicine?.quantity || 0);
+  const [price, setPrice] = useState(medicine?.price?.toString() || '');
+  const [quantity, setQuantity] = useState(medicine?.quantity?.toString() || '');
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !location || price <= 0 || quantity < 0 || isNaN(price) || isNaN(quantity)) {
+    const priceValue = parseFloat(price);
+    const quantityValue = parseInt(quantity, 10);
+
+    if (!name || !location || isNaN(priceValue) || priceValue <= 0 || isNaN(quantityValue) || quantityValue < 0) {
       toast({
         title: 'Invalid Input',
         description: 'Please fill all fields with valid data.',
@@ -70,7 +73,7 @@ const MedicineForm = ({
       });
       return;
     }
-    onSubmit({ name, location, price, quantity });
+    onSubmit({ name, location, price: priceValue, quantity: quantityValue });
     onClose();
   };
 
@@ -85,12 +88,12 @@ const MedicineForm = ({
         <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" placeholder="e.g. Rack A-12"/>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="price" className="text-right">Price (₹)</Label>
-        <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} className="col-span-3" />
+        <Label htmlFor="price" className="text-right">Price (₹) / strip</Label>
+        <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="Price for 10 tablets"/>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="quantity" className="text-right">Quantity</Label>
-        <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 0)} className="col-span-3" />
+        <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="col-span-3" placeholder="Number of strips"/>
       </div>
       <DialogFooter>
         <DialogClose asChild>
@@ -167,8 +170,8 @@ export default function InventoryTab({
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Quantity</TableHead>
+              <TableHead className="text-right">Price / strip</TableHead>
+              <TableHead className="text-right">Strips (Qty)</TableHead>
               <TableHead className="text-right w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -196,7 +199,7 @@ export default function InventoryTab({
                           <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the medicine
                             from your inventory.
-                          </AlertDialogDescription>
+                          </DialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
