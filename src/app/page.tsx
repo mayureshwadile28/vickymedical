@@ -80,11 +80,10 @@ export default function Home() {
         const medIndex = updatedMedicines.findIndex(m => m.id === item.medicineId);
         if (medIndex !== -1) {
           const currentMed = updatedMedicines[medIndex];
-          const tabletsSold = item.quantity;
-          const stripsSold = tabletsSold / 10;
+          const unitsSold = currentMed.category === 'Tablet' ? item.quantity / 10 : item.quantity;
           
           // Ensure quantity is treated as a float for precision
-          const newQuantity = parseFloat(currentMed.quantity.toString()) - stripsSold;
+          const newQuantity = parseFloat(currentMed.quantity.toString()) - unitsSold;
 
           // Update the medicine with the new, precise quantity
           updatedMedicines[medIndex] = { ...currentMed, quantity: newQuantity };

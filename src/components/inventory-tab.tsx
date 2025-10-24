@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import type { Medicine } from '@/lib/types';
+import { useState, useMemo } from 'react';
+import type { Medicine, MedicineCategory } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -34,9 +34,20 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, FilePenLine, Trash2, Pill, Inbox } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PlusCircle, FilePenLine, Trash2, Pill, Inbox, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+
+const CATEGORIES: MedicineCategory[] = ['Tablet', 'Syrup', 'Veterinary', 'Injection', 'Other'];
+
 
 interface InventoryTabProps {
   medicines: Medicine[];
@@ -58,6 +69,7 @@ const MedicineForm = ({
   const [location, setLocation] = useState(medicine?.location || '');
   const [price, setPrice] = useState(medicine?.price?.toString() || '');
   const [quantity, setQuantity] = useState(medicine?.quantity?.toString() || '');
+  const [category, setCategory] = useState<MedicineCategory>(medicine?.category || 'Tablet');
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -65,7 +77,7 @@ const MedicineForm = ({
     const priceValue = parseFloat(price);
     const quantityValue = parseInt(quantity, 10);
 
-    if (!name || !location || isNaN(priceValue) || priceValue <= 0 || isNaN(quantityValue) || quantityValue < 0) {
+    if (!name || !location || !category || isNaN(priceValue) || priceValue <= 0 || isNaN(quantityValue) || quantityValue < 0) {
       toast({
         title: 'Invalid Input',
         description: 'Please fill all fields with valid data.',
@@ -73,11 +85,25 @@ const MedicineForm = ({
       });
       return;
     }
-    onSubmit({ name, location, price: priceValue, quantity: quantityValue });
+    onSubmit({ name, location, price: priceValue, quantity: quantityValue, category });
   };
+  
+  const priceLabel = category === 'Tablet' ? 'Price (₹) / strip' : 'Price (₹) / unit';
+  const quantityLabel = category === 'Tablet' ? 'Strips (Qty)' : 'Units (Qty)';
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="category" className="text-right">Category</Label>
+        <Select value={category} onValueChange={(value) => setCategory(value as MedicineCategory)}>
+          <SelectTrigger className="col-span-3">
+            <SelectValue placeholder="Select a category" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="name" className="text-right">Name</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="e.g. Paracetamol 500mg"/>
@@ -87,12 +113,12 @@ const MedicineForm = ({
         <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" placeholder="e.g. Rack A-12"/>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="price" className="text-right">Price (₹) / strip</Label>
-        <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="Price for 10 tablets"/>
+        <Label htmlFor="price" className="text-right">{priceLabel}</Label>
+        <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={category === 'Tablet' ? 'Price for 10 tablets' : 'Price per unit'}/>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="quantity" className="text-right">Quantity</Label>
-        <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="col-span-3" placeholder="Number of strips"/>
+        <Label htmlFor="quantity" className="text-right">{quantityLabel}</Label>
+        <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="col-span-3" placeholder={category === 'Tablet' ? 'Number of strips' : 'Number of units'}/>
       </div>
       <DialogFooter>
         <DialogClose asChild>
@@ -113,6 +139,8 @@ export default function InventoryTab({
 }: InventoryTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<MedicineCategory | 'All'>('All');
   const { toast } = useToast();
 
   const handleFormSubmit = (data: Omit<Medicine, 'id'>) => {
@@ -136,16 +164,34 @@ export default function InventoryTab({
     setDialogOpen(true);
   };
 
+  const filteredMedicines = useMemo(() => {
+    return medicines
+      .filter(med => activeCategory === 'All' || med.category === activeCategory)
+      .filter(med => med.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [medicines, activeCategory, searchQuery]);
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <CardTitle className="flex items-center gap-2">
             <Pill className="h-6 w-6"/>
             Medicine Inventory
         </CardTitle>
-        <Button onClick={openAddDialog}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Medicine
-        </Button>
+        <div className="flex items-center gap-2">
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    type="search"
+                    placeholder="Search medicine..."
+                    className="pl-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+            <Button onClick={openAddDialog}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Medicine
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -163,22 +209,31 @@ export default function InventoryTab({
             />
           </DialogContent>
         </Dialog>
+        
+        <Tabs value={activeCategory} onValueChange={(val) => setActiveCategory(val as any)} className="mb-4">
+            <TabsList>
+                <TabsTrigger value="All">All</TabsTrigger>
+                {CATEGORIES.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
+            </TabsList>
+        </Tabs>
 
         <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead className="text-right">Price / strip</TableHead>
-              <TableHead className="text-right">Strips (Qty)</TableHead>
+              <TableHead className="text-right">Price / unit</TableHead>
+              <TableHead className="text-right">Stock (Units)</TableHead>
               <TableHead className="text-right w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {medicines.length > 0 ? medicines.map(med => (
+            {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
               <TableRow key={med.id}>
                 <TableCell className="font-medium">{med.name}</TableCell>
+                <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
                 <TableCell>{med.location}</TableCell>
                 <TableCell className="text-right">₹{med.price.toFixed(2)}</TableCell>
                 <TableCell className={`text-right font-semibold ${med.quantity < 10 ? 'text-destructive' : ''}`}>{med.quantity % 1 === 0 ? med.quantity : med.quantity.toFixed(1)}</TableCell>
@@ -214,11 +269,11 @@ export default function InventoryTab({
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center h-48 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center h-48 text-muted-foreground">
                    <div className="flex flex-col items-center justify-center gap-2">
                     <Inbox className="h-10 w-10" />
-                    <span className="font-medium">No medicines in inventory.</span>
-                    <Button size="sm" onClick={openAddDialog}>Add Your First Medicine</Button>
+                    <span className="font-medium">No medicines found.</span>
+                    <p className="text-sm">Try adjusting your search or filters, or add a new medicine.</p>
                    </div>
                 </TableCell>
               </TableRow>

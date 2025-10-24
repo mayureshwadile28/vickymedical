@@ -66,8 +66,10 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     setIsSearchOpen(false);
   };
   
-  const pricePerTablet = selectedMedicine ? selectedMedicine.price / 10 : 0;
-  const availableTablets = selectedMedicine ? selectedMedicine.quantity * 10 : 0;
+  const isTablet = selectedMedicine?.category === 'Tablet';
+  const pricePerUnit = selectedMedicine ? (isTablet ? selectedMedicine.price / 10 : selectedMedicine.price) : 0;
+  const availableUnits = selectedMedicine ? (isTablet ? selectedMedicine.quantity * 10 : selectedMedicine.quantity) : 0;
+  const quantityLabel = isTablet ? 'Tablets (Qty)' : 'Units (Qty)';
 
   const handleAddToBill = () => {
     if (!selectedMedicine) {
@@ -79,9 +81,9 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       return;
     }
     
-    // Check against available tablets
-    if (quantity > availableTablets) {
-      toast({ title: 'Not enough stock', description: `Only ${availableTablets} tablets available.`, variant: 'destructive' });
+    // Check against available units
+    if (quantity > availableUnits) {
+      toast({ title: 'Not enough stock', description: `Only ${availableUnits} units available.`, variant: 'destructive' });
       return;
     }
 
@@ -93,8 +95,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       const newQuantity = existingItem.quantity + quantity;
 
       // Check total quantity in cart against available stock
-      if (newQuantity > availableTablets) {
-        toast({ title: 'Not enough stock', description: `Cannot add ${quantity} more. Only ${availableTablets - existingItem.quantity} tablets left in stock.`, variant: 'destructive' });
+      if (newQuantity > availableUnits) {
+        toast({ title: 'Not enough stock', description: `Cannot add ${quantity} more. Only ${availableUnits - existingItem.quantity} units left in stock.`, variant: 'destructive' });
         return;
       }
       existingItem.quantity = newQuantity;
@@ -102,7 +104,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     } else {
       setBillItems([
         ...billItems,
-        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: pricePerTablet },
+        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: pricePerUnit },
       ]);
     }
     
@@ -166,7 +168,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                     {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
                       <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between">
                         <span>{med.name}</span>
-                        <span className="text-xs text-muted-foreground">({med.quantity} strips left)</span>
+                        <span className="text-xs text-muted-foreground">({med.quantity} {med.category === 'Tablet' ? 'strips' : 'units'} left)</span>
                       </div>
                     )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
                   </ScrollArea>
@@ -180,8 +182,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
               )}
             </div>
             <div className="md:col-span-1">
-              <Label htmlFor="quantity">Tablets (Qty)</Label>
-              <Input id="quantity" type="number" min="1" max={availableTablets} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} disabled={!selectedMedicine}/>
+              <Label htmlFor="quantity">{quantityLabel}</Label>
+              <Input id="quantity" type="number" min="1" max={availableUnits || 1} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} disabled={!selectedMedicine}/>
             </div>
             <div className="md:col-span-2">
                 <Button onClick={handleAddToBill} disabled={!selectedMedicine} className="w-full">
@@ -196,8 +198,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
-                  <TableHead className="w-[80px] text-right">Tablets</TableHead>
-                  <TableHead className="w-[100px] text-right">Price/Tablet</TableHead>
+                  <TableHead className="w-[80px] text-right">Units</TableHead>
+                  <TableHead className="w-[100px] text-right">Price/Unit</TableHead>
                   <TableHead className="w-[100px] text-right">Total</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
