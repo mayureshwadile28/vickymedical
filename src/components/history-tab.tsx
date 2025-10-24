@@ -17,12 +17,18 @@ interface HistoryTabProps {
   medicines: Medicine[];
 }
 
-export default function HistoryTab({ sales }: HistoryTabProps) {
-  const [isClient, setIsClient] = useState(false);
+const SaleDate = ({ date }: { date: string }) => {
+  const [formattedDate, setFormattedDate] = useState('');
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    setFormattedDate(new Date(date).toLocaleDateString());
+  }, [date]);
+
+  return <span className="text-muted-foreground">{formattedDate}</span>;
+}
+
+
+export default function HistoryTab({ sales }: HistoryTabProps) {
 
   return (
     <Card>
@@ -40,9 +46,7 @@ export default function HistoryTab({ sales }: HistoryTabProps) {
                 <AccordionTrigger>
                   <div className="flex justify-between w-full pr-4">
                     <span className="font-medium">{sale.customerName}</span>
-                    <span className="text-muted-foreground">
-                      {isClient ? new Date(sale.saleDate).toLocaleDateString() : ''}
-                    </span>
+                    <SaleDate date={sale.saleDate} />
                     <span className="font-semibold">${sale.totalAmount.toFixed(2)}</span>
                   </div>
                 </AccordionTrigger>
