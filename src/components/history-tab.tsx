@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { Medicine, SaleRecord } from '@/lib/types';
 import {
   Accordion,
@@ -17,6 +18,12 @@ interface HistoryTabProps {
 }
 
 export default function HistoryTab({ sales }: HistoryTabProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -34,7 +41,7 @@ export default function HistoryTab({ sales }: HistoryTabProps) {
                   <div className="flex justify-between w-full pr-4">
                     <span className="font-medium">{sale.customerName}</span>
                     <span className="text-muted-foreground">
-                      {new Date(sale.saleDate).toLocaleDateString()}
+                      {isClient ? new Date(sale.saleDate).toLocaleDateString() : ''}
                     </span>
                     <span className="font-semibold">${sale.totalAmount.toFixed(2)}</span>
                   </div>
