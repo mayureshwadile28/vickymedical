@@ -22,10 +22,21 @@ const SaleDate = ({ date }: { date: string }) => {
   const [formattedTime, setFormattedTime] = useState('');
 
   useEffect(() => {
-    const d = new Date(date);
-    setFormattedDate(d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }));
-    setFormattedTime(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }));
+    if (date) {
+      const d = new Date(date);
+      setFormattedDate(d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }));
+      setFormattedTime(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }));
+    }
   }, [date]);
+  
+  if (!formattedDate) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Calendar className="h-4 w-4" />
+        <span>Loading date...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
