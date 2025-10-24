@@ -59,7 +59,7 @@ const isExpired = (expiryDate: string) => {
 export default function DashboardTab({ medicines, createSale }: DashboardTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | string>(1);
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -139,7 +139,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       toast({ title: 'No medicine selected', variant: 'destructive' });
       return;
     }
-    addMedicineToBill(selectedMedicine, quantity);
+    const qty = Number(quantity) || 1;
+    addMedicineToBill(selectedMedicine, qty);
     setSelectedMedicine(null);
     setSearchQuery('');
     setQuantity(1);
@@ -177,6 +178,18 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       </span>
     );
   }
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+      setQuantity('');
+    } else {
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue)) {
+        setQuantity(numValue);
+      }
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
@@ -237,7 +250,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
             </div>
             <div className="md:col-span-1 space-y-2">
               <Label htmlFor="quantity">{quantityLabel}</Label>
-              <Input id="quantity" type="number" min="1" max={availableUnits || 1} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} disabled={!selectedMedicine}/>
+              <Input id="quantity" type="number" min="1" max={availableUnits || 1} value={quantity} onChange={handleQuantityChange} disabled={!selectedMedicine}/>
             </div>
             <div className="md:col-span-2">
                 <Button onClick={handleAddToBill} disabled={!selectedMedicine} className="w-full">
@@ -338,4 +351,3 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       </Card>
     </div>
   );
-}
