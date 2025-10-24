@@ -64,7 +64,7 @@ const SaleDate = ({ date }: { date: string }) => {
 }
 
 
-export default function HistoryTab({ sales, clearSales }: HistoryTabProps) {
+export default function HistoryTab({ sales, medicines, clearSales }: HistoryTabProps) {
   const { toast } = useToast();
 
   const handleExport = () => {
@@ -73,19 +73,23 @@ export default function HistoryTab({ sales, clearSales }: HistoryTabProps) {
       return;
     }
 
-    const headers = ['Sale ID', 'Date', 'Customer Name', 'Item Name', 'Quantity', 'Price Per Unit', 'Item Total'];
+    const headers = ['Sale ID', 'Date', 'Customer Name', 'Item Name', 'Category', 'Quantity', 'Price Per Unit', 'Item Total', 'Sale Total'];
     const csvRows = [headers.join(',')];
 
     sales.forEach(sale => {
       sale.items.forEach(item => {
+        const medicineDetails = medicines.find(m => m.id === item.medicineId);
+        const category = medicineDetails?.category || 'N/A';
         const row = [
           sale.id,
           new Date(sale.saleDate).toLocaleString(),
           `"${sale.customerName.replace(/"/g, '""')}"`,
           `"${item.name.replace(/"/g, '""')}"`,
+          category,
           item.quantity,
           item.price.toFixed(2),
           (item.quantity * item.price).toFixed(2),
+          sale.totalAmount.toFixed(2)
         ];
         csvRows.push(row.join(','));
       });
