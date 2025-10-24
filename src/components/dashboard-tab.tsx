@@ -32,7 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin, AlertTriangle } from 'lucide-react';
 
 interface DashboardTabProps {
   medicines: Medicine[];
@@ -48,6 +48,14 @@ const getAvailableUnits = (medicine: Medicine | null) => {
   return medicine.quantity || 0;
 };
 
+const isExpired = (expiryDate: string) => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    return expiry < today;
+};
+
 export default function DashboardTab({ medicines, createSale }: DashboardTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
@@ -60,8 +68,9 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   const filteredMedicines = useMemo(() => {
     return medicines.filter(m => {
       const hasStock = getAvailableUnits(m) > 0;
-      if (!searchQuery) return hasStock;
-      return m.name.toLowerCase().includes(searchQuery.toLowerCase()) && hasStock;
+      const notExpired = !isExpired(m.expiryDate);
+      if (!searchQuery) return hasStock && notExpired;
+      return m.name.toLowerCase().includes(searchQuery.toLowerCase()) && hasStock && notExpired;
     });
   }, [searchQuery, medicines]);
 
@@ -87,6 +96,11 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       return;
     }
     
+    if (isExpired(selectedMedicine.expiryDate)) {
+      toast({ title: 'Expired Medicine', description: `${selectedMedicine.name} has expired and cannot be sold.`, variant: 'destructive' });
+      return;
+    }
+
     if (availableUnits <= 0) {
       toast({ title: 'Out of stock', description: `${selectedMedicine.name} is out of stock.`, variant: 'destructive' });
       return;
@@ -201,8 +215,17 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
               </Popover>
               {selectedMedicine && (
                 <div className="flex items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded-md border">
-                  <MapPin className="h-4 w-4 mr-2 text-primary" />
-                  Location: <span className="font-semibold text-foreground ml-1">{selectedMedicine.location}</span>
+                    {isExpired(selectedMedicine.expiryDate) ? (
+                        <div className="flex items-center text-destructive font-semibold">
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            <span>This medicine is EXPIRED.</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-2 text-primary" />
+                            Location: <span className="font-semibold text-foreground ml-1">{selectedMedicine.location}</span>
+                        </div>
+                    )}
                 </div>
               )}
             </div>
@@ -310,5 +333,3 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
-
-    

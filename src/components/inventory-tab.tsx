@@ -46,6 +46,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, FilePenLine, Trash2, Pill, Inbox, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
 
 const CATEGORIES: MedicineCategory[] = ['Tablet', 'Syrup', 'Veterinary', 'Injection', 'Other'];
 
@@ -67,6 +69,7 @@ const MedicineForm = ({
 }) => {
   const [name, setName] = useState(medicine?.name || '');
   const [location, setLocation] = useState(medicine?.location || '');
+  const [expiryDate, setExpiryDate] = useState(medicine?.expiryDate || '');
   const [price, setPrice] = useState(medicine?.price?.toString() || '');
   const [category, setCategory] = useState<MedicineCategory>(medicine?.category || 'Tablet');
   
@@ -83,7 +86,7 @@ const MedicineForm = ({
     e.preventDefault();
     const priceValue = parseFloat(price);
     
-    if (!name || !location || !category || isNaN(priceValue) || priceValue <= 0) {
+    if (!name || !location || !category || !expiryDate || isNaN(priceValue) || priceValue <= 0) {
       toast({ title: 'Invalid Input', description: 'Please fill all fields with valid data.', variant: 'destructive' });
       return;
     }
@@ -102,6 +105,7 @@ const MedicineForm = ({
         name, 
         location, 
         price: priceValue, 
+        expiryDate,
         category, 
         strips: stripsValue, 
         looseTablets: medicine?.looseTablets || 0, // Keep existing loose tablets on edit, or 0 for new
@@ -115,7 +119,7 @@ const MedicineForm = ({
         toast({ title: 'Invalid Input', description: 'Please provide a valid quantity.', variant: 'destructive' });
         return;
       }
-      submissionData = { name, location, price: priceValue, category, quantity: quantityValue };
+      submissionData = { name, location, price: priceValue, category, expiryDate, quantity: quantityValue };
     }
     
     onSubmit(submissionData);
@@ -143,6 +147,10 @@ const MedicineForm = ({
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="location" className="text-right">Location</Label>
         <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" placeholder="e.g. Rack A-12"/>
+      </div>
+       <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="expiryDate" className="text-right">Expiry Date</Label>
+        <Input id="expiryDate" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="col-span-3"/>
       </div>
 
       {category === 'Tablet' ? (
@@ -247,6 +255,22 @@ export default function InventoryTab({
      return `₹${med.price.toFixed(2)} / unit`;
   }
 
+  const isExpired = (expiryDate: string) => {
+    // an empty or invalid date is not considered expired
+    if (!expiryDate) return false;
+    // Set time to 00:00:00 to compare dates only
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    return expiry < today;
+  }
+  
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'});
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -301,6 +325,7 @@ export default function InventoryTab({
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Location</TableHead>
+              <TableHead>Expiry</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead className="text-right w-[100px]">Actions</TableHead>
@@ -309,14 +334,20 @@ export default function InventoryTab({
           <TableBody>
             {filteredMedicines.length > 0 ? filteredMedicines.map(med => {
                 const totalStock = getTotalStock(med);
-                const isLowStock = totalStock <= 5;
+                const lowStock = totalStock > 0 && totalStock <= 5;
+                const expired = isExpired(med.expiryDate);
                 return (
-                  <TableRow key={med.id}>
+                  <TableRow key={med.id} className={cn(expired && 'bg-destructive/10')}>
                     <TableCell className="font-medium">{med.name}</TableCell>
                     <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
                     <TableCell>{med.location}</TableCell>
+                    <TableCell className={cn('font-medium', expired && 'text-destructive font-bold')}>
+                      {formatDate(med.expiryDate)}
+                    </TableCell>
                     <TableCell>{getPriceDisplay(med)}</TableCell>
-                    <TableCell className={`font-semibold ${isLowStock ? 'text-destructive' : ''}`}>{getStockDisplay(med)}</TableCell>
+                    <TableCell className={cn('font-semibold', lowStock && 'text-destructive')}>
+                      {getStockDisplay(med)}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(med)} className="h-8 w-8">
@@ -350,7 +381,7 @@ export default function InventoryTab({
                 )
             }) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center h-48 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center h-48 text-muted-foreground">
                    <div className="flex flex-col items-center justify-center gap-2">
                     <Inbox className="h-10 w-10" />
                     <span className="font-medium">No medicines found.</span>
@@ -366,5 +397,3 @@ export default function InventoryTab({
     </Card>
   );
 }
-
-    

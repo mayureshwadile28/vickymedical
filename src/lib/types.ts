@@ -5,6 +5,7 @@ export interface Medicine {
   name: string;
   location: string;
   price: number; // Price per strip for tablets, or per unit for others
+  expiryDate: string; // YYYY-MM-DD format
   quantity: number; // For non-tablet categories
   strips?: number; // For tablets
   looseTablets?: number; // For tablets
