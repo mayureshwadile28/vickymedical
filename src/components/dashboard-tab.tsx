@@ -32,9 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin, AlertTriangle, Camera } from 'lucide-react';
-import { PrescriptionScanner } from './prescription-scanner';
-import { scanPrescription } from '@/ai/flows/prescription-flow';
+import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin, AlertTriangle } from 'lucide-react';
 
 interface DashboardTabProps {
   medicines: Medicine[];
@@ -65,7 +63,6 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -181,36 +178,6 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     );
   }
 
-  const handlePrescriptionScan = async (image: string) => {
-    try {
-        toast({ title: 'Scanning...', description: 'AI is reading the prescription. Please wait.' });
-        const result = await scanPrescription({ photoDataUri: image });
-        setIsScannerOpen(false);
-
-        if (!result.medicines || result.medicines.length === 0) {
-            toast({ title: 'Scan Complete', description: 'AI could not identify any medicines from the image.', variant: 'destructive' });
-            return;
-        }
-
-        toast({ title: 'Scan Successful!', description: `${result.medicines.length} medicine(s) found. Adding to bill.` });
-
-        result.medicines.forEach(medName => {
-            // Find the closest match in inventory (case-insensitive)
-            const foundMedicine = medicines.find(m => m.name.toLowerCase().includes(medName.toLowerCase()));
-
-            if (foundMedicine) {
-                addMedicineToBill(foundMedicine, 1); // Add with default quantity 1
-            } else {
-                toast({ title: 'Not in Stock', description: `Could not find "${medName}" in your inventory.`, variant: 'destructive' });
-            }
-        });
-    } catch (error) {
-        console.error("AI Scan Failed:", error);
-        toast({ title: 'AI Scan Failed', description: 'There was an error scanning the prescription.', variant: 'destructive' });
-        setIsScannerOpen(false);
-    }
-};
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <Card className="lg:col-span-3">
@@ -251,23 +218,6 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                     </ScrollArea>
                   </PopoverContent>
                 </Popover>
-                <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="icon" className="shrink-0">
-                            <Camera className="h-5 w-5" />
-                            <span className="sr-only">Scan Prescription</span>
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle>Scan Prescription</DialogTitle>
-                            <DialogDescription>
-                                Center the prescription in the frame and capture an image, or upload a photo.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <PrescriptionScanner onCapture={handlePrescriptionScan} />
-                    </DialogContent>
-                </Dialog>
               </div>
               {selectedMedicine && (
                 <div className="flex items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded-md border">
@@ -389,3 +339,5 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
+
+    
