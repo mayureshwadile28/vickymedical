@@ -34,7 +34,7 @@ const prescriptionPrompt = ai.definePrompt({
     name: 'prescriptionPrompt',
     input: { schema: ScanPrescriptionInputSchema },
     output: { schema: ScanPrescriptionOutputSchema },
-    model: 'googleai/gemini-pro-vision',
+    model: 'googleai/gemini-1.5-flash',
     prompt: `You are an expert pharmacist. Your task is to analyze the provided image of a medical prescription.
     The handwriting may be messy. Use your knowledge of common medicines to decipher the text.
     Identify only the names of the medicines prescribed and list them.
