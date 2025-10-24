@@ -31,7 +31,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin } from 'lucide-react';
 
 interface DashboardTabProps {
   medicines: Medicine[];
@@ -64,6 +64,9 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     setQuantity(1);
     setIsSearchOpen(false);
   };
+  
+  const pricePerTablet = selectedMedicine ? selectedMedicine.price / 10 : 0;
+  const availableTablets = selectedMedicine ? selectedMedicine.quantity * 10 : 0;
 
   const handleAddToBill = () => {
     if (!selectedMedicine) {
@@ -74,25 +77,32 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       toast({ title: 'Invalid quantity', description: 'Please enter a valid quantity.', variant: 'destructive' });
       return;
     }
-    if (quantity > selectedMedicine.quantity) {
-      toast({ title: 'Not enough stock', description: `Only ${selectedMedicine.quantity} available.`, variant: 'destructive' });
+    
+    // Check against available tablets
+    if (quantity > availableTablets) {
+      toast({ title: 'Not enough stock', description: `Only ${availableTablets} tablets available.`, variant: 'destructive' });
       return;
     }
 
     const existingItemIndex = billItems.findIndex(item => item.medicineId === selectedMedicine.id);
+    const itemPricePerTablet = selectedMedicine.price / 10;
+    
     if (existingItemIndex !== -1) {
       const newBillItems = [...billItems];
-      const newQuantity = newBillItems[existingItemIndex].quantity + quantity;
-      if (newQuantity > selectedMedicine.quantity) {
-        toast({ title: 'Not enough stock', description: `Cannot add ${quantity}. Only ${selectedMedicine.quantity - newBillItems[existingItemIndex].quantity} more available.`, variant: 'destructive' });
+      const existingItem = newBillItems[existingItemIndex];
+      const newQuantity = existingItem.quantity + quantity;
+
+      // Check total quantity in cart against available stock
+      if (newQuantity > availableTablets) {
+        toast({ title: 'Not enough stock', description: `Cannot add ${quantity} more. Only ${availableTablets - existingItem.quantity} tablets left in stock.`, variant: 'destructive' });
         return;
       }
-      newBillItems[existingItemIndex].quantity = newQuantity;
+      existingItem.quantity = newQuantity;
       setBillItems(newBillItems);
     } else {
       setBillItems([
         ...billItems,
-        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: selectedMedicine.price },
+        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: itemPricePerTablet },
       ]);
     }
     
@@ -131,7 +141,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
         </CardHeader>
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-            <div className="md:col-span-3">
+            <div className="md:col-span-3 space-y-2">
               <Label htmlFor="medicine-search">Search Medicine</Label>
               <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
                 <PopoverTrigger asChild>
@@ -156,16 +166,22 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                     {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
                       <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between">
                         <span>{med.name}</span>
-                        <span className="text-xs text-muted-foreground">({med.quantity} left)</span>
+                        <span className="text-xs text-muted-foreground">({med.quantity} strips left)</span>
                       </div>
                     )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
                   </ScrollArea>
                 </PopoverContent>
               </Popover>
+              {selectedMedicine && (
+                <div className="flex items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded-md border">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Location: <span className="font-semibold text-foreground ml-1">{selectedMedicine.location}</span>
+                </div>
+              )}
             </div>
             <div className="md:col-span-1">
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input id="quantity" type="number" min="1" max={selectedMedicine?.quantity} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} disabled={!selectedMedicine}/>
+              <Label htmlFor="quantity">Tablets (Qty)</Label>
+              <Input id="quantity" type="number" min="1" max={availableTablets} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} disabled={!selectedMedicine}/>
             </div>
             <div className="md:col-span-2">
                 <Button onClick={handleAddToBill} disabled={!selectedMedicine} className="w-full">
@@ -180,8 +196,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
-                  <TableHead className="w-[80px] text-right">Qty</TableHead>
-                  <TableHead className="w-[100px] text-right">Price</TableHead>
+                  <TableHead className="w-[80px] text-right">Tablets</TableHead>
+                  <TableHead className="w-[100px] text-right">Price/Tablet</TableHead>
                   <TableHead className="w-[100px] text-right">Total</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -267,5 +283,3 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
-
-    

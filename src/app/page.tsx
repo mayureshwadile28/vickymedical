@@ -36,13 +36,15 @@ export default function Home() {
     };
     setSales(prev => [newSale, ...prev]);
 
-    // 2. Update stock
+    // 2. Update stock (quantity is in strips)
     setMedicines(prevMedicines => {
       const updatedMedicines = [...prevMedicines];
       newSale.items.forEach(item => {
         const medIndex = updatedMedicines.findIndex(m => m.id === item.medicineId);
         if (medIndex !== -1) {
-          updatedMedicines[medIndex].quantity -= item.quantity;
+          const tabletsSold = item.quantity;
+          const stripsSold = tabletsSold / 10;
+          updatedMedicines[medIndex].quantity -= stripsSold;
         }
       });
       return updatedMedicines;
