@@ -32,7 +32,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin, AlertTriangle } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, ChevronsUpDown, PlusCircle, MapPin, AlertTriangle, Camera } from 'lucide-react';
+import { PrescriptionScanner } from './prescription-scanner';
+import { scanPrescription } from '@/ai/flows/prescription-flow';
 
 interface DashboardTabProps {
   medicines: Medicine[];
@@ -63,6 +65,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
   const { toast } = useToast();
 
   const filteredMedicines = useMemo(() => {
@@ -90,52 +94,55 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   const availableUnits = getAvailableUnits(selectedMedicine);
   const quantityLabel = isTablet ? 'Tablets (Qty)' : 'Units (Qty)';
 
-  const handleAddToBill = () => {
-    if (!selectedMedicine) {
-      toast({ title: 'No medicine selected', variant: 'destructive' });
+  const addMedicineToBill = (medicine: Medicine, qty: number) => {
+    if (isExpired(medicine.expiryDate)) {
+      toast({ title: 'Expired Medicine', description: `${medicine.name} has expired and cannot be sold.`, variant: 'destructive' });
       return;
     }
-    
-    if (isExpired(selectedMedicine.expiryDate)) {
-      toast({ title: 'Expired Medicine', description: `${selectedMedicine.name} has expired and cannot be sold.`, variant: 'destructive' });
+  
+    const currentAvailable = getAvailableUnits(medicine);
+    if (currentAvailable <= 0) {
+      toast({ title: 'Out of stock', description: `${medicine.name} is out of stock.`, variant: 'destructive' });
       return;
     }
-
-    if (availableUnits <= 0) {
-      toast({ title: 'Out of stock', description: `${selectedMedicine.name} is out of stock.`, variant: 'destructive' });
-      return;
-    }
-
-    if (quantity <= 0 || isNaN(quantity)) {
+  
+    if (qty <= 0 || isNaN(qty)) {
       toast({ title: 'Invalid quantity', description: 'Please enter a valid quantity.', variant: 'destructive' });
       return;
     }
     
-    if (quantity > availableUnits) {
-      toast({ title: 'Not enough stock', description: `Only ${availableUnits} units available.`, variant: 'destructive' });
-      return;
-    }
-
-    const existingItemIndex = billItems.findIndex(item => item.medicineId === selectedMedicine.id);
-    
+    const existingItemIndex = billItems.findIndex(item => item.medicineId === medicine.id);
+    const pricePerUnit = medicine.category === 'Tablet' ? medicine.price / (medicine.tabletsPerStrip || 10) : medicine.price;
+  
     if (existingItemIndex !== -1) {
       const newBillItems = [...billItems];
       const existingItem = newBillItems[existingItemIndex];
-      const newQuantity = existingItem.quantity + quantity;
-
-      if (newQuantity > availableUnits) {
-        toast({ title: 'Not enough stock', description: `Cannot add ${quantity} more. Only ${availableUnits - existingItem.quantity} units left in stock.`, variant: 'destructive' });
+      const newQuantity = existingItem.quantity + qty;
+  
+      if (newQuantity > currentAvailable) {
+        toast({ title: 'Not enough stock', description: `Cannot add ${qty} more. Only ${currentAvailable - existingItem.quantity} units left in stock.`, variant: 'destructive' });
         return;
       }
       existingItem.quantity = newQuantity;
       setBillItems(newBillItems);
     } else {
-      setBillItems([
-        ...billItems,
-        { medicineId: selectedMedicine.id, name: selectedMedicine.name, quantity, price: pricePerUnit },
+      if (qty > currentAvailable) {
+        toast({ title: 'Not enough stock', description: `Only ${currentAvailable} units available.`, variant: 'destructive' });
+        return;
+      }
+      setBillItems(prev => [
+        ...prev,
+        { medicineId: medicine.id, name: medicine.name, quantity: qty, price: pricePerUnit },
       ]);
     }
-    
+  }
+
+  const handleAddToBill = () => {
+    if (!selectedMedicine) {
+      toast({ title: 'No medicine selected', variant: 'destructive' });
+      return;
+    }
+    addMedicineToBill(selectedMedicine, quantity);
     setSelectedMedicine(null);
     setSearchQuery('');
     setQuantity(1);
@@ -174,6 +181,36 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     );
   }
 
+  const handlePrescriptionScan = async (image: string) => {
+    try {
+        toast({ title: 'Scanning...', description: 'AI is reading the prescription. Please wait.' });
+        const result = await scanPrescription({ photoDataUri: image });
+        setIsScannerOpen(false);
+
+        if (!result.medicines || result.medicines.length === 0) {
+            toast({ title: 'Scan Complete', description: 'AI could not identify any medicines from the image.', variant: 'destructive' });
+            return;
+        }
+
+        toast({ title: 'Scan Successful!', description: `${result.medicines.length} medicine(s) found. Adding to bill.` });
+
+        result.medicines.forEach(medName => {
+            // Find the closest match in inventory (case-insensitive)
+            const foundMedicine = medicines.find(m => m.name.toLowerCase().includes(medName.toLowerCase()));
+
+            if (foundMedicine) {
+                addMedicineToBill(foundMedicine, 1); // Add with default quantity 1
+            } else {
+                toast({ title: 'Not in Stock', description: `Could not find "${medName}" in your inventory.`, variant: 'destructive' });
+            }
+        });
+    } catch (error) {
+        console.error("AI Scan Failed:", error);
+        toast({ title: 'AI Scan Failed', description: 'There was an error scanning the prescription.', variant: 'destructive' });
+        setIsScannerOpen(false);
+    }
+};
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <Card className="lg:col-span-3">
@@ -184,35 +221,54 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
             <div className="md:col-span-3 space-y-2">
               <Label htmlFor="medicine-search">Search Medicine</Label>
-              <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {selectedMedicine?.name || "Select a medicine"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Type to search..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="pl-8"
-                      />
-                    </div>
-                  </div>
-                  <ScrollArea className="h-[250px]">
-                    {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
-                      <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between items-center">
-                        <span>{med.name}</span>
-                        <span className="text-xs">{getStockDisplay(med)}</span>
+               <div className="flex gap-2">
+                <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selectedMedicine?.name || "Select a medicine"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <div className="p-2">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Type to search..."
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className="pl-8"
+                        />
                       </div>
-                    )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
-                  </ScrollArea>
-                </PopoverContent>
-              </Popover>
+                    </div>
+                    <ScrollArea className="h-[250px]">
+                      {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
+                        <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between items-center">
+                          <span>{med.name}</span>
+                          <span className="text-xs">{getStockDisplay(med)}</span>
+                        </div>
+                      )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+                <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" className="shrink-0">
+                            <Camera className="h-5 w-5" />
+                            <span className="sr-only">Scan Prescription</span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                            <DialogTitle>Scan Prescription</DialogTitle>
+                            <DialogDescription>
+                                Center the prescription in the frame and capture the image.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <PrescriptionScanner onCapture={handlePrescriptionScan} />
+                    </DialogContent>
+                </Dialog>
+              </div>
               {selectedMedicine && (
                 <div className="flex items-center text-sm text-muted-foreground bg-muted/50 p-2 rounded-md border">
                     {isExpired(selectedMedicine.expiryDate) ? (
@@ -333,5 +389,3 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
-
-    
