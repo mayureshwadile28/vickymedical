@@ -74,7 +74,6 @@ const MedicineForm = ({
       return;
     }
     onSubmit({ name, location, price: priceValue, quantity: quantityValue });
-    onClose();
   };
 
   return (
@@ -124,6 +123,7 @@ export default function InventoryTab({
       addMedicine(data);
       toast({ title: 'Success', description: 'Medicine added successfully.', className: 'bg-green-500 text-white' });
     }
+    setDialogOpen(false);
   };
 
   const openAddDialog = () => {
@@ -230,3 +230,5 @@ export default function InventoryTab({
     </Card>
   );
 }
+
+    
