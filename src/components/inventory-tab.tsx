@@ -199,7 +199,7 @@ export default function InventoryTab({
                           <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the medicine
                             from your inventory.
-                          </DialogDescription>
+                          </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
