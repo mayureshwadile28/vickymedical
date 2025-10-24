@@ -235,7 +235,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                 </div>
               )}
             </div>
-            <div className="md:col-span-1">
+            <div className="md:col-span-1 space-y-2">
               <Label htmlFor="quantity">{quantityLabel}</Label>
               <Input id="quantity" type="number" min="1" max={availableUnits || 1} value={quantity} onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} disabled={!selectedMedicine}/>
             </div>
@@ -339,5 +339,3 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
-
-    

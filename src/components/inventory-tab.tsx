@@ -91,8 +91,8 @@ const MedicineForm = ({
     today.setHours(0, 0, 0, 0); // Set to midnight to compare dates only
     const enteredExpiryDate = new Date(expiryDate);
     
-    if (enteredExpiryDate < today) {
-      toast({ title: 'Invalid Expiry Date', description: 'Expiry date cannot be in the past.', variant: 'destructive' });
+    if (enteredExpiryDate <= today) {
+      toast({ title: 'Invalid Expiry Date', description: 'Expiry date must be in the future.', variant: 'destructive' });
       return;
     }
     
@@ -138,10 +138,10 @@ const MedicineForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="category" className="text-right">Category</Label>
+       <div className="grid sm:grid-cols-4 items-center gap-4">
+        <Label htmlFor="category" className="sm:text-right">Category</Label>
         <Select value={category} onValueChange={(value) => setCategory(value as MedicineCategory)}>
-          <SelectTrigger className="col-span-3">
+          <SelectTrigger className="sm:col-span-3">
             <SelectValue placeholder="Select a category" />
           </SelectTrigger>
           <SelectContent>
@@ -149,39 +149,39 @@ const MedicineForm = ({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="name" className="text-right">Name</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" placeholder="e.g. Paracetamol 500mg"/>
+       <div className="grid sm:grid-cols-4 items-center gap-4">
+        <Label htmlFor="name" className="sm:text-right">Name</Label>
+        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" placeholder="e.g. Paracetamol 500mg"/>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="location" className="text-right">Location</Label>
-        <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" placeholder="e.g. Rack A-12"/>
+       <div className="grid sm:grid-cols-4 items-center gap-4">
+        <Label htmlFor="location" className="sm:text-right">Location</Label>
+        <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="sm:col-span-3" placeholder="e.g. Rack A-12"/>
       </div>
-       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="expiryDate" className="text-right">Expiry Date</Label>
-        <Input id="expiryDate" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="col-span-3" required/>
+       <div className="grid sm:grid-cols-4 items-center gap-4">
+        <Label htmlFor="expiryDate" className="sm:text-right">Expiry Date</Label>
+        <Input id="expiryDate" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="sm:col-span-3" required/>
       </div>
 
       {category === 'Tablet' ? (
         <>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="price" className="text-right">{priceLabel}</Label>
-            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={`Price for ${tabletsPerStrip} tablets`} />
+           <div className="grid sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="price" className="sm:text-right">{priceLabel}</Label>
+            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="sm:col-span-3" placeholder={`Price for ${tabletsPerStrip} tablets`} />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="strips" className="text-right">Strips (Qty)</Label>
-            <Input id="strips" type="number" min="0" value={strips} onChange={(e) => setStrips(e.target.value)} className="col-span-3" placeholder="Number of full strips"/>
+           <div className="grid sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="strips" className="sm:text-right">Strips (Qty)</Label>
+            <Input id="strips" type="number" min="0" value={strips} onChange={(e) => setStrips(e.target.value)} className="sm:col-span-3" placeholder="Number of full strips"/>
           </div>
         </>
       ) : (
         <>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="price" className="text-right">{priceLabel}</Label>
-            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder="Price per unit"/>
+           <div className="grid sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="price" className="sm:text-right">{priceLabel}</Label>
+            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="sm:col-span-3" placeholder="Price per unit"/>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="quantity" className="text-right">Units (Qty)</Label>
-            <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="col-span-3" placeholder="Number of units"/>
+           <div className="grid sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="quantity" className="sm:text-right">Units (Qty)</Label>
+            <Input id="quantity" type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="sm:col-span-3" placeholder="Number of units"/>
           </div>
         </>
       )}
@@ -320,25 +320,25 @@ export default function InventoryTab({
             <Pill className="h-6 w-6"/>
             Medicine Inventory
         </CardTitle>
-        <div className="flex items-center gap-2">
-            <div className="relative w-full max-w-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+            <div className="relative w-full sm:w-auto sm:max-w-xs">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                     type="search"
                     placeholder="Search medicine..."
-                    className="pl-9"
+                    className="pl-9 w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-            <Button onClick={openAddDialog}>
+            <Button onClick={openAddDialog} className="w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Add Medicine
             </Button>
         </div>
       </CardHeader>
       <CardContent>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[480px]">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingMedicine ? 'Edit Medicine' : 'Add New Medicine'}</DialogTitle>
               <DialogDescription>
@@ -354,13 +354,13 @@ export default function InventoryTab({
         </Dialog>
         
         <Tabs value={activeCategory} onValueChange={(val) => setActiveCategory(val as any)} className="mb-4">
-            <TabsList>
+            <TabsList className="overflow-x-auto whitespace-nowrap h-auto p-1">
                 <TabsTrigger value="All">All</TabsTrigger>
                 {CATEGORIES.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
             </TabsList>
         </Tabs>
 
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -381,13 +381,13 @@ export default function InventoryTab({
                 return (
                   <TableRow key={med.id} className={cn(expired && 'bg-destructive/10')}>
                     <TableCell className="font-medium">{med.name}</TableCell>
-                    <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
+                    <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">{med.category}</span></TableCell>
                     <TableCell>{med.location}</TableCell>
                     <TableCell>
                       <ExpiryInfo expiryDate={med.expiryDate} />
                     </TableCell>
-                    <TableCell>{getPriceDisplay(med)}</TableCell>
-                    <TableCell className={cn('font-semibold', lowStock && !expired && 'text-yellow-500', totalStock === 0 && 'text-destructive')}>
+                    <TableCell className="whitespace-nowrap">{getPriceDisplay(med)}</TableCell>
+                    <TableCell className={cn('font-semibold whitespace-nowrap', lowStock && !expired && 'text-yellow-500', totalStock === 0 && 'text-destructive')}>
                       {getStockDisplay(med)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -439,9 +439,3 @@ export default function InventoryTab({
     </Card>
   );
 }
-
-    
-
-    
-
-

@@ -122,14 +122,14 @@ export default function HistoryTab({ sales, medicines, clearSales }: HistoryTabP
           <History className="mr-2 h-6 w-6" />
           Sales History
         </CardTitle>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExport} disabled={sales.length === 0}>
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+            <Button variant="outline" onClick={handleExport} disabled={sales.length === 0} className="w-full sm:w-auto">
                 <FileDown className="mr-2 h-4 w-4" />
                 Export to CSV
             </Button>
              <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={sales.length === 0}>
+                    <Button variant="destructive" disabled={sales.length === 0} className="w-full sm:w-auto">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Clear History
                     </Button>
