@@ -333,3 +333,5 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
+
+    

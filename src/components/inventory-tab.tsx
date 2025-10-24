@@ -397,3 +397,5 @@ export default function InventoryTab({
     </Card>
   );
 }
+
+    
