@@ -2,10 +2,6 @@
   "name": "Vicky Medical",
   "short_name": "VickyMedical",
   "description": "A modern medical inventory and sales management system.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#212121",
-  "theme_color": "#3F51B5",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -17,5 +13,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "theme_color": "#3F51B5",
+  "background_color": "#121212",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
 }
