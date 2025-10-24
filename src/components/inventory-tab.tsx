@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -71,7 +72,6 @@ const MedicineForm = ({
   
   // State for Tablet category
   const [strips, setStrips] = useState(medicine?.strips?.toString() || '');
-  const [looseTablets, setLooseTablets] = useState(medicine?.looseTablets?.toString() || '');
   const [tabletsPerStrip, setTabletsPerStrip] = useState(medicine?.tabletsPerStrip?.toString() || '10');
 
   // State for other categories
@@ -92,14 +92,22 @@ const MedicineForm = ({
 
     if (category === 'Tablet') {
       const stripsValue = parseInt(strips, 10);
-      const looseTabletsValue = parseInt(looseTablets, 10) || 0;
       const tabletsPerStripValue = parseInt(tabletsPerStrip, 10);
 
       if (isNaN(stripsValue) || stripsValue < 0 || isNaN(tabletsPerStripValue) || tabletsPerStripValue <= 0) {
         toast({ title: 'Invalid Input for Tablets', description: 'Please provide valid numbers for strips and tablets per strip.', variant: 'destructive' });
         return;
       }
-      submissionData = { name, location, price: priceValue, category, strips: stripsValue, looseTablets: looseTabletsValue, tabletsPerStrip: tabletsPerStripValue, quantity: 0 };
+      submissionData = { 
+        name, 
+        location, 
+        price: priceValue, 
+        category, 
+        strips: stripsValue, 
+        looseTablets: medicine?.looseTablets || 0, // Keep existing loose tablets on edit, or 0 for new
+        tabletsPerStrip: tabletsPerStripValue, 
+        quantity: 0 
+      };
 
     } else {
       const quantityValue = parseInt(quantity, 10);
@@ -150,10 +158,6 @@ const MedicineForm = ({
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="strips" className="text-right">Strips (Qty)</Label>
             <Input id="strips" type="number" min="0" value={strips} onChange={(e) => setStrips(e.target.value)} className="col-span-3" placeholder="Number of full strips"/>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="looseTablets" className="text-right">Loose Tablets</Label>
-            <Input id="looseTablets" type="number" min="0" value={looseTablets} onChange={(e) => setLooseTablets(e.target.value)} className="col-span-3" placeholder="Number of loose tablets"/>
           </div>
         </>
       ) : (
