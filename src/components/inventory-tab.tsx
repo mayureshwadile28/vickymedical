@@ -173,7 +173,7 @@ export default function InventoryTab({
               <TableRow key={med.id}>
                 <TableCell className="font-medium">{med.name}</TableCell>
                 <TableCell>{med.location}</TableCell>
-                <TableCell className="text-right">${med.price.toFixed(2)}</TableCell>
+                <TableCell className="text-right">₹{med.price.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{med.quantity}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEditDialog(med)}>

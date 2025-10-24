@@ -183,8 +183,8 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                     <TableRow key={item.medicineId}>
                       <TableCell>{item.name}</TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${(item.quantity * item.price).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">₹{(item.quantity * item.price).toFixed(2)}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => handleRemoveFromBill(item.medicineId)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -203,7 +203,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={3} className="font-bold text-lg">Total</TableCell>
-                      <TableCell className="text-right font-bold text-lg">${totalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-bold text-lg">₹{totalAmount.toFixed(2)}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableFooter>
@@ -222,7 +222,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
           <div className="space-y-4">
              <div className="flex justify-between items-center text-xl font-bold">
               <span>Total Amount:</span>
-              <span>${totalAmount.toFixed(2)}</span>
+              <span>₹{totalAmount.toFixed(2)}</span>
             </div>
             <Dialog>
               <DialogTrigger asChild>
@@ -242,7 +242,7 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                   </div>
                   <div className="text-lg font-bold flex justify-between col-span-4 mt-4">
                     <span>Total:</span>
-                    <span>${totalAmount.toFixed(2)}</span>
+                    <span>₹{totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
                 <DialogFooter>

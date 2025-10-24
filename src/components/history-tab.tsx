@@ -47,7 +47,7 @@ export default function HistoryTab({ sales }: HistoryTabProps) {
                   <div className="flex justify-between w-full pr-4">
                     <span className="font-medium">{sale.customerName}</span>
                     <SaleDate date={sale.saleDate} />
-                    <span className="font-semibold">${sale.totalAmount.toFixed(2)}</span>
+                    <span className="font-semibold">₹{sale.totalAmount.toFixed(2)}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -65,9 +65,9 @@ export default function HistoryTab({ sales }: HistoryTabProps) {
                         <TableRow key={item.medicineId}>
                           <TableCell>{item.name}</TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">₹{item.price.toFixed(2)}</TableCell>
                           <TableCell className="text-right">
-                            ${(item.quantity * item.price).toFixed(2)}
+                            ₹{(item.quantity * item.price).toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))}
