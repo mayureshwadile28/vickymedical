@@ -19,17 +19,17 @@ interface HistoryTabProps {
 
 const SaleDate = ({ date }: { date: string }) => {
   const [formattedDate, setFormattedDate] = useState('');
-  const [formattedTime, setFormattedTime] = useState('');
 
   useEffect(() => {
-    if (date) {
-      const d = new Date(date);
-      setFormattedDate(d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }));
-      setFormattedTime(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }));
-    }
+    // This code now runs only on the client, after hydration.
+    const d = new Date(date);
+    const datePart = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const timePart = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    setFormattedDate(`${datePart} at ${timePart}`);
   }, [date]);
   
   if (!formattedDate) {
+    // Render a placeholder on the server and during the initial client render
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Calendar className="h-4 w-4" />
@@ -38,10 +38,11 @@ const SaleDate = ({ date }: { date: string }) => {
     );
   }
 
+  // Render the formatted date only on the client
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <Calendar className="h-4 w-4" />
-      <span>{formattedDate} at {formattedTime}</span>
+      <span>{formattedDate}</span>
     </div>
   );
 }
