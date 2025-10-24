@@ -121,7 +121,7 @@ const MedicineForm = ({
     onSubmit(submissionData);
   };
   
-  const priceLabel = category === 'Tablet' ? `Price (₹) / strip of ${tabletsPerStrip}` : 'Price (₹) / unit';
+  const priceLabel = category === 'Tablet' ? `Price (₹) / strip of ${tabletsPerStrip || 10}` : 'Price (₹) / unit';
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -153,7 +153,7 @@ const MedicineForm = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="price" className="text-right">{priceLabel}</Label>
-            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={`Price for ${tabletsPerStrip} tablets`} />
+            <Input id="price" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="col-span-3" placeholder={`Price for ${tabletsPerStrip || 10} tablets`} />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="strips" className="text-right">Strips (Qty)</Label>
@@ -232,6 +232,13 @@ export default function InventoryTab({
     const quantity = med.quantity || 0;
     return `${quantity} units`;
   }
+
+  const getTotalStock = (med: Medicine) => {
+    if (med.category === 'Tablet') {
+      return ((med.strips || 0) * (med.tabletsPerStrip || 10) + (med.looseTablets || 0));
+    }
+    return med.quantity || 0;
+  }
   
   const getPriceDisplay = (med: Medicine) => {
      if (med.category === 'Tablet') {
@@ -301,14 +308,15 @@ export default function InventoryTab({
           </TableHeader>
           <TableBody>
             {filteredMedicines.length > 0 ? filteredMedicines.map(med => {
-                const totalStock = med.category === 'Tablet' ? ((med.strips || 0) * (med.tabletsPerStrip || 10) + (med.looseTablets || 0)) : (med.quantity || 0);
+                const totalStock = getTotalStock(med);
+                const isLowStock = totalStock <= 5;
                 return (
                   <TableRow key={med.id}>
                     <TableCell className="font-medium">{med.name}</TableCell>
                     <TableCell><span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">{med.category}</span></TableCell>
                     <TableCell>{med.location}</TableCell>
                     <TableCell>{getPriceDisplay(med)}</TableCell>
-                    <TableCell className={`font-semibold ${totalStock < 10 ? 'text-destructive' : ''}`}>{getStockDisplay(med)}</TableCell>
+                    <TableCell className={`font-semibold ${isLowStock ? 'text-destructive' : ''}`}>{getStockDisplay(med)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(med)} className="h-8 w-8">
@@ -358,3 +366,5 @@ export default function InventoryTab({
     </Card>
   );
 }
+
+    

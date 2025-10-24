@@ -86,6 +86,12 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
       toast({ title: 'No medicine selected', variant: 'destructive' });
       return;
     }
+    
+    if (availableUnits <= 0) {
+      toast({ title: 'Out of stock', description: `${selectedMedicine.name} is out of stock.`, variant: 'destructive' });
+      return;
+    }
+
     if (quantity <= 0 || isNaN(quantity)) {
       toast({ title: 'Invalid quantity', description: 'Please enter a valid quantity.', variant: 'destructive' });
       return;
@@ -143,12 +149,15 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
   };
   
   const getStockDisplay = (med: Medicine) => {
-    if (med.category === 'Tablet') {
-      const tabletsPerStrip = med.tabletsPerStrip || 10;
-      const totalTablets = (med.strips || 0) * tabletsPerStrip + (med.looseTablets || 0);
-      return `${totalTablets} tablets left`;
-    }
-    return `${med.quantity} units left`;
+    const totalUnits = getAvailableUnits(med);
+    const unitText = med.category === 'Tablet' ? 'tablets' : 'units';
+    const isLowStock = totalUnits > 0 && totalUnits <= 5;
+    
+    return (
+      <span className={isLowStock ? 'text-destructive font-semibold' : 'text-muted-foreground'}>
+        ({totalUnits} {unitText} left)
+      </span>
+    );
   }
 
   return (
@@ -182,9 +191,9 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
                   </div>
                   <ScrollArea className="h-[250px]">
                     {filteredMedicines.length > 0 ? filteredMedicines.map(med => (
-                      <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between">
+                      <div key={med.id} onClick={() => handleSelectMedicine(med)} className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm flex justify-between items-center">
                         <span>{med.name}</span>
-                        <span className="text-xs text-muted-foreground">({getStockDisplay(med)})</span>
+                        <span className="text-xs">{getStockDisplay(med)}</span>
                       </div>
                     )) : <p className="p-2 text-sm text-center text-muted-foreground">No medicines found.</p>}
                   </ScrollArea>
@@ -301,3 +310,5 @@ export default function DashboardTab({ medicines, createSale }: DashboardTabProp
     </div>
   );
 }
+
+    
