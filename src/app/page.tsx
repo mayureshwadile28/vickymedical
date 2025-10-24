@@ -80,16 +80,14 @@ export default function Home() {
         const medIndex = updatedMedicines.findIndex(m => m.id === item.medicineId);
         if (medIndex !== -1) {
           const currentMed = updatedMedicines[medIndex];
-          const totalTabletsInStock = currentMed.quantity * 10;
-          const remainingTablets = totalTabletsInStock - item.quantity;
-          // Calculate the new quantity in strips, rounding up to handle partial strips.
-          const newStripQuantity = Math.ceil(remainingTablets / 10);
-          
-          // To be more precise, let's store remaining tablets and derive strips. Or, for simplicity, let's assume we sell full strips and update logic.
-          // For now, let's stick to the tablet logic. The quantity in medicine is strips.
           const tabletsSold = item.quantity;
           const stripsSold = tabletsSold / 10;
-          updatedMedicines[medIndex].quantity -= stripsSold;
+          
+          // Ensure quantity is treated as a float for precision
+          const newQuantity = parseFloat(currentMed.quantity.toString()) - stripsSold;
+
+          // Update the medicine with the new, precise quantity
+          updatedMedicines[medIndex] = { ...currentMed, quantity: newQuantity };
         }
       });
       return updatedMedicines;

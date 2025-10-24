@@ -181,7 +181,7 @@ export default function InventoryTab({
                 <TableCell className="font-medium">{med.name}</TableCell>
                 <TableCell>{med.location}</TableCell>
                 <TableCell className="text-right">₹{med.price.toFixed(2)}</TableCell>
-                <TableCell className={`text-right font-semibold ${med.quantity < 10 ? 'text-destructive' : ''}`}>{med.quantity}</TableCell>
+                <TableCell className={`text-right font-semibold ${med.quantity < 10 ? 'text-destructive' : ''}`}>{med.quantity % 1 === 0 ? med.quantity : med.quantity.toFixed(1)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(med)} className="h-8 w-8">
@@ -230,5 +230,3 @@ export default function InventoryTab({
     </Card>
   );
 }
-
-    
